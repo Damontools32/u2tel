@@ -1,5 +1,11 @@
 import os
+import logging
 from telethon import TelegramClient, events
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger(__name__)
 
 api_id = 'YOUR_API_ID'
 api_hash = 'YOUR_API_HASH'
@@ -11,7 +17,7 @@ client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 
 @client.on(events.NewMessage(pattern='/send'))
 async def upload_files(event):
-    print('Received /send command')
+    logger.debug('Received /send command')
     for file_name in os.listdir(downloads_folder):
         if file_name == ".torrent.bolt.db":
             continue
