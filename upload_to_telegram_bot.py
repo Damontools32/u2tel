@@ -28,7 +28,8 @@ def zip_directory(directory, zip_file):
 async def upload_files(event):
     logger.debug('Received /send command')
 
-    zip_file = 'downloads.zip'
+    folder_name = os.path.basename(downloads_folder)
+    zip_file = f'{folder_name}.zip'
     zip_directory(downloads_folder, zip_file)
 
     try:
