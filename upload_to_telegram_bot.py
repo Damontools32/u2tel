@@ -15,18 +15,17 @@ downloads_folder = '/root/downloads'
 
 client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 
+def get_all_files(directory):
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file != ".torrent.bolt.db":
+                yield os.path.join(root, file)
+
 @client.on(events.NewMessage(pattern='/send'))
 async def upload_files(event):
     logger.debug('Received /send command')
-    for file_name in os.listdir(downloads_folder):
-        if file_name == ".torrent.bolt.db":
-            continue
-
-        file_path = os.path.join(downloads_folder, file_name)
-
-        if not os.path.isfile(file_path):
-            await event.reply(f'Error: {file_name} is not a file.')
-            continue
+    for file_path in get_all_files(downloads_folder):
+        file_name = os.path.basename(file_path)
 
         try:
             with open(file_path, 'rb') as f:
