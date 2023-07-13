@@ -24,31 +24,34 @@ def zip_directory(directory, zip_file):
                     file_path = os.path.join(root, file)
                     zipf.write(file_path, os.path.relpath(file_path, directory))
 
-def get_target_folder(root_folder):
+def get_target_folders(root_folder):
+    target_folders = []
     for item in os.listdir(root_folder):
         item_path = os.path.join(root_folder, item)
         if os.path.isdir(item_path):
-            return item_path
-    return None
+            target_folders.append(item_path)
+    return target_folders
 
 @client.on(events.NewMessage(pattern='/send'))
 async def upload_files(event):
     logger.debug('Received /send command')
 
-    target_folder = get_target_folder(downloads_folder)
-    if target_folder:
-        folder_name = os.path.basename(target_folder)
-        zip_file = f'{folder_name}.zip'
-        zip_directory(target_folder, zip_file)
+    target_folders = get_target_folders(downloads_folder)
 
-        try:
-            with open(zip_file, 'rb') as f:
-                await client.send_file(event.chat_id, f, caption=zip_file)
-        except Exception as e:
-            await event.reply(f'Error uploading {zip_file}: {e}')
-        finally:
-            os.remove(zip_file)
+    if target_folders:
+        for target_folder in target_folders:
+            folder_name = os.path.basename(target_folder)
+            zip_file = f'{folder_name}.zip'
+            zip_directory(target_folder, zip_file)
+
+            try:
+                with open(zip_file, 'rb') as f:
+                    await client.send_file(event.chat_id, f, caption=zip_file)
+            except Exception as e:
+                await event.reply(f'Error uploading {zip_file}: {e}')
+            finally:
+                os.remove(zip_file)
     else:
         await event.reply('No folder found in the downloads directory.')
 
-client.run_until_disconnected()￼Enter
+client.run_until_disconnected()
