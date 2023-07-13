@@ -1,5 +1,4 @@
 import os
-import zipfile
 import logging
 from telethon import TelegramClient, events
 
@@ -16,13 +15,13 @@ downloads_folder = '/root/downloads'
 
 client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 
-def zip_directory(directory, zip_file):
-    with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for root, _, files in os.walk(directory):
-            for file in files:
-                if file != ".torrent.bolt.db":
-                    file_path = os.path.join(root, file)
-                    zipf.write(file_path, os.path.relpath(file_path, directory))
+def get_folder_size(folder_path):
+    total_size = 0
+    for dirpath, _, filenames in os.walk(folder_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size
 
 def get_target_folders(root_folder):
     target_folders = []
@@ -41,16 +40,20 @@ async def upload_files(event):
     if target_folders:
         for target_folder in target_folders:
             folder_name = os.path.basename(target_folder)
-            zip_file = f'{folder_name}.zip'
-            zip_directory(target_folder, zip_file)
 
-            try:
-                with open(zip_file, 'rb') as f:
-                    await client.send_file(event.chat_id, f, caption=zip_file)
-            except Exception as e:
-                await event.reply(f'Error uploading {zip_file}: {e}')
-            finally:
-                os.remove(zip_file)
+            if get_folder_size(target_folder) > 2 * (1024 ** 3):  # Check if folder size is more than 2 GiB
+                for root, _, files in os.walk(target_folder):
+                    for file in files:
+                        if file.lower().endswith('.rar'):
+                            file_path = os.path.join(root, file)
+                            try:
+                                with open(file_path, 'rb') as f:
+                                    await client.send_file(event.chat_id, f, caption=f'{folder_name}/{file}')
+                            except Exception as e:
+                                await event.reply(f'Error uploading {file}: {e}')
+            else:
+                await event.reply(f'Folder size of {folder_name} is less than 2 GiB.')
+
     else:
         await event.reply('No folder found in the downloads directory.')
 
