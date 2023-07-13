@@ -1,26 +1,30 @@
 import os
-import glob
 from telethon import TelegramClient, events
 
-TELEGRAM_API_ID = 'YOUR_TELEGRAM_API_ID'
-TELEGRAM_API_HASH = 'YOUR_TELEGRAM_API_HASH'
-TELEGRAM_BOT_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
-DOWNLOADS_DIR = '/root/downloads/'
+api_id = 'YOUR_API_ID'
+api_hash = 'YOUR_API_HASH'
+bot_token = 'YOUR_BOT_TOKEN'
 
-client = TelegramClient('bot', api_id=TELEGRAM_API_ID, api_hash=TELEGRAM_API_HASH).start(bot_token=TELEGRAM_BOT_TOKEN)
+downloads_folder = '/root/downloads'
 
-@client.on(events.NewMessage(pattern='/upload'))
+client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
+
+@client.on(events.NewMessage(pattern='/send'))
 async def upload_files(event):
-    sender_id = event.sender_id
-    files = glob.glob(os.path.join(DOWNLOADS_DIR, '*'))
-    for file_path in files:
+    for file_name in os.listdir(downloads_folder):
+        file_path = os.path.join(downloads_folder, file_name)
+
+        if not os.path.isfile(file_path):
+            await event.reply(f'Error: {file_name} is not a file.')
+            continue
+
+        f = None
         try:
             with open(file_path, 'rb') as f:
-                file_name = os.path.basename(file_path)
-                await event.reply(f'Uploading {file_name}...')
-                await client.send_file(sender_id, f, caption=file_name)
-                await event.reply(f'{file_name} uploaded successfully.')
+                await client.send_file(event.chat_id, f, caption=file_name)
+        except IsADirectoryError as e:
+            await event.reply(f'Error uploading {file_name}: {e}')
         except Exception as e:
             await event.reply(f'Error uploading {file_name}: {e}')
 
-client.run_until_disconnected()￼Enter
+client.run_until_disconnected()
