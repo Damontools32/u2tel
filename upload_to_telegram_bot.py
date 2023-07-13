@@ -11,14 +11,17 @@ client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 
 @client.on(events.NewMessage(pattern='/send'))
 async def upload_files(event):
+    print('Received /send command')
     for file_name in os.listdir(downloads_folder):
+        if file_name == ".torrent.bolt.db":
+            continue
+
         file_path = os.path.join(downloads_folder, file_name)
 
         if not os.path.isfile(file_path):
             await event.reply(f'Error: {file_name} is not a file.')
             continue
 
-        f = None
         try:
             with open(file_path, 'rb') as f:
                 await client.send_file(event.chat_id, f, caption=file_name)
